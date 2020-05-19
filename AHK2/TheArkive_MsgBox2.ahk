@@ -801,64 +801,56 @@ GetTextDims(r_Text, sFaceName, nHeight,maxWidth:=0) {
 	
 	hDC := DllCall("GetDC", "Ptr", HWND_DESKTOP) ; "UInt" or "Ptr" ?
 	devCaps := DllCall("GetDeviceCaps", "Uint", hDC, "int", 90)
-	; cbD := 12 * (devCaps / 96) + 1
-	; msgbox "nHeight: " nHeight " / devCaps: " devCaps
 	nHeight := -DllCall("MulDiv", "int", nHeight, "int", devCaps, "int", 72)
 	
 	bBold := False, bItalic := False, bUnderline := False, bStrikeOut := False, nCharSet := 0
 	
-	hFont := DllCall("CreateFont", "int", nHeight, "int", 0 ; get specified font handle
-	               , "int", 0, "int", 0, "int", 400 + 300 * bBold
-				   , "Uint", bItalic, "Uint", bUnderline, "Uint"
-				   , bStrikeOut, "Uint", nCharSet, "Uint", 0, "Uint"
+	hFont := DllCall("CreateFont", "int", nHeight, "int", 0, "int", 0, "int", 0, "int", 400 + 300 * bBold
+				   , "Uint", bItalic, "Uint", bUnderline, "Uint", bStrikeOut, "Uint", nCharSet, "Uint", 0, "Uint"
 				   , 0, "Uint", 0, "Uint", 0, "str", sFaceName)
 	
 	hFont := !hFont ? DllCall("GetStockObject","Int",DEFAULT_GUI_FONT) : hFont ; load default font if invalid
-	
-    VarSetCapacity(SIZE,8,0) ;-- Initialize
 	
     l_LeftMargin:=0, l_RightMargin:=0, l_TabLength:=0, r_Width:=0, r_Height:=0
 	l_Width := (!maxWidth) ? MAXINT : maxWidth
 	l_DTFormat := 0x400|0x10 ; DT_CALCRECT (0x400) / DT_WORDBREAK (0x10)
 	
-    VarSetCapacity(DRAWTEXTPARAMS,20,0) ;-- Create and populate DRAWTEXTPARAMS structure
-    NumPut(20,           DRAWTEXTPARAMS,0,"UInt")       ;-- cbSize
-    NumPut(l_TabLength,  DRAWTEXTPARAMS,4,"Int")        ;-- iTabLength
-    NumPut(l_LeftMargin, DRAWTEXTPARAMS,8,"Int")        ;-- iLeftMargin
-    NumPut(l_RightMargin,DRAWTEXTPARAMS,12,"Int")       ;-- iRightMargin
+    DRAWTEXTPARAMS := BufferAlloc(20,0) ;-- Create and populate DRAWTEXTPARAMS structure
+	NumPut "UInt", 20, "Int", l_TabLength, "Int", l_LeftMargin, "Int", l_RightMargin, DRAWTEXTPARAMS
 	
-    VarSetCapacity(RECT,16,0) ;-- Create and populate the RECT structure
-    NumPut(l_Width,RECT,8,"Int")                        ;-- right
+	RECT := BufferAlloc(16,0)
+	NumPut "Int", l_Width, RECT, 8 ;-- right
 	
-    old_hFont:=DllCall("SelectObject","Ptr",hDC,"Ptr",hFont)
+    old_hFont := DllCall("SelectObject","Ptr",hDC,"Ptr",hFont)
 	
+	SIZE := BufferAlloc(8,0) ;-- Initialize
 	testW := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" ; taken from Fnt_GetAverageCharWidth()
-	RC := DllCall("GetTextExtentPoint32","Ptr",hDC,"Str",testW,"Int",StrLen(testW),"Ptr",&SIZE)
+	RC := DllCall("GetTextExtentPoint32","Ptr",hDC,"Str",testW,"Int",StrLen(testW),"Ptr",SIZE.Ptr)
 	RC := RC ? NumGet(SIZE,0,"Int") : 0
-	avgCharWidth := Floor((RC/26+1)/2)
-	avgCharHeight := NumGet(SIZE,4,"Int")
+	avgCharWidth := Floor((RC/26+1)/2), avgCharHeight := NumGet(SIZE,4,"Int")
 	
-    VarSetCapacity(l_Text,VarSetCapacity(r_Text)+16,0), l_Text:=r_Text ;-- Create a buffer + 16 bytes
+	strBufSize := StrPut(r_Text), l_Text := BufferAlloc(strBufSize+16,0)
+	StrPut r_Text, l_Text ; , (l_Text.Size+1) ; not specifying size
 	
-    DllCall("DrawTextEx"
-        ,"Ptr",hDC                                      ;-- hdc [in]
-        ,"Str",l_Text                                   ;-- lpchText [in, out]
-        ,"Int",-1                                       ;-- cchText [in]
-        ,"Ptr",&RECT                                    ;-- lprc [in, out]
-        ,"UInt",l_DTFormat                              ;-- dwDTFormat [in]
-        ,"Ptr",&DRAWTEXTPARAMS)                         ;-- lpDTParams [in]
+    DllCall("DrawTextEx","Ptr",hDC,"Ptr",l_Text.Ptr,"Int",-1,"Ptr",RECT.Ptr,"UInt",l_DTFormat,"Ptr",DRAWTEXTPARAMS.Ptr)
+    DllCall("SelectObject","Ptr",hDC,"Ptr",old_hFont)
+	DllCall("ReleaseDC","Ptr",HWND_DESKTOP,"Ptr",hDC) ; avoid memory leak
 	
-    DllCall("SelectObject","Ptr",hDC,"Ptr",old_hFont), DllCall("ReleaseDC","Ptr",HWND_DESKTOP,"Ptr",hDC) ; avoid memory leak
+	r_Width := NumGet(RECT,8,"Int"), r_Height := NumGet(RECT,12,"Int")
+	NumPut "Int", r_Width, "Int", r_Height, SIZE ; write H/W to SIZE rect structure
 	
-    NumPut(r_Width:=NumGet(RECT,8,"Int"),SIZE,0,"Int") ; get txt rect W
-    NumPut(r_Height:=NumGet(RECT,12,"Int"),SIZE,4,"Int") ; get txt rect H
-	
-	retVal := {}, retVal.h := r_Height, retVal.w := r_Width, retVal.cbd := cbd
-	retVal.avgW := avgCharWidth, retVal.avgH := avgCharHeight, retVal.addr := &SIZE
+	retVal := {}, retVal.h := r_Height, retVal.w := r_Width
+	retVal.avgW := avgCharWidth, retVal.avgH := avgCharHeight, retVal.addr := SIZE.Ptr
 	
 	return retVal
 }
 
+; ===========================================================================
+; created by TheArkive
+; Usage: Specify X/Y coords to get info on which monitor that point is on,
+;        and the bounds of that monitor.  If no X/Y is specified then the
+;        current mouse X/Y coords are used.
+; ===========================================================================
 GetMonitorData(x:="", y:="") {
 	saveCoordModeMouse := A_CoordModeMouse
 	CoordMode "Mouse", "Screen" ; CoordMode Mouse, Screen ; AHK v1
