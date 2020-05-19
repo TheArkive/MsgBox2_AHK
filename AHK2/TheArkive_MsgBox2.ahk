@@ -387,7 +387,7 @@ class msgbox2 {
 				this.btnAlign := (curVal = "left" or curVal = "right") ? curVal : ""
 		}
 		
-		testDims := GetTextDims("Testing 1 2 3",this.fontFace,this.fontSize)
+		testDims := this.GetTextDims("Testing 1 2 3",this.fontFace,this.fontSize)
 		
 		this.btnMarX := testDims.avgW * this.btnMarXr
 		this.btnMarY := testDims.avgH * this.btnMarYr
@@ -400,9 +400,9 @@ class msgbox2 {
 			WinGetPos parentX, parentY, parentW, parentH, "ahk_id " this.hParent
 			this.parentX := parentX, this.parentY := parentY, this.parentW := parentW, this.parentH := parentH
 		}
-		this.curMon := GetMonitorData(parentX,parentY) ; props: left, right, top, bottom, x, y, Cx, Cy, w, h
+		this.curMon := this.GetMonitorData(parentX,parentY) ; props: left, right, top, bottom, x, y, Cx, Cy, w, h
 		
-		this.btnDims := GetTextDims("Try Again",this.fontFace,this.fontSize) ; default button dims / no padding
+		this.btnDims := this.GetTextDims("Try Again",this.fontFace,this.fontSize) ; default button dims / no padding
 		
 		btnList := this.btnList ; === button list processing =============================
 		Try btnList := Integer(this.btnList)
@@ -426,7 +426,7 @@ class msgbox2 {
 			btnText := RegExReplace(A_LoopField,"\[[\w]+\]$","")
 			btnProp := RegExReplace(A_LoopField,"^[^\[]+|\[|\]","")
 			this.btnDefault := (btnProp = "d") ? A_Index : this.btnDefault
-			btnDims := GetTextDims(btnText,this.fontFace,this.fontSize)
+			btnDims := this.GetTextDims(btnText,this.fontFace,this.fontSize)
 			
 			this.btnDims := (btnDims.w > this.btnDims.w) ? btnDims : this.btnDims
 			bMW += btnDims.w + this.btnMarX
@@ -441,7 +441,7 @@ class msgbox2 {
 		this.bMWc := bMW						; bMW custom (btnTextW)
 		
 		If (this.helpText) {
-			this.helpDims := GetTextDims(this.helpText,this.fontFace,this.fontSize)
+			this.helpDims := this.GetTextDims(this.helpText,this.fontFace,this.fontSize)
 			this.bMWd += this.helpDims.w + this.btnMarX
 			this.bMWc += this.helpDims.w + this.btnMarX
 		}
@@ -479,10 +479,10 @@ class msgbox2 {
 		dMar := this.dlgMargin
 		
 		If (!ctlWidth) {
-			msg := GetTextDims(this.sMsg,this.fontFace,this.fontSize,this.maxW)
+			msg := this.GetTextDims(this.sMsg,this.fontFace,this.fontSize,this.maxW)
 			ctlWidth := msg.w
 		} Else
-			msg := GetTextDims(this.sMsg,this.fontFace,this.fontSize,ctlWidth)
+			msg := this.GetTextDims(this.sMsg,this.fontFace,this.fontSize,ctlWidth)
 		
 		adjHeight := this.adjHeight, adjWidth := this.adjWidth
 		noClose := this.noCloseBtn ? " -SysMenu" : " -MaximizeBox -MinimizeBox"
@@ -525,7 +525,7 @@ class msgbox2 {
 			listArr := StrSplit(this.listMsg,"|")
 			Loop Parse listMsg, "|"
 			{
-				listDims := GetTextDims(A_LoopField,this.fontFace,this.fontSize,0)
+				listDims := this.GetTextDims(A_LoopField,this.fontFace,this.fontSize,0)
 				ctlWidth := (listDims.w + (vScrollw * 1.5) > ctlWidth) ? listDims.w + (vScrollW * 1.5) : ctlWidth
 			}
 			
@@ -538,7 +538,7 @@ class msgbox2 {
 		}
 		
 		if (this.editBox) {
-			editDims := GetTextDims(this.editMsg,this.fontFace,this.fontSize,0)
+			editDims := this.GetTextDims(this.editMsg,this.fontFace,this.fontSize,0)
 			ctlWidth := (editDims.w + vScrollW > ctlWidth) ? editDims.w + vScrollW : ctlWidth
 			
 			editCtl := g.AddEdit("xp y" newY " w" ctlWidth " r1",this.editMsg)
@@ -552,7 +552,7 @@ class msgbox2 {
 			dropListMsg := this.dropListMsg
 			Loop Parse dropListMsg, "|"
 			{
-				dropListDims := GetTextDims(A_LoopField,this.fontFace,this.fontSize,0)
+				dropListDims := this.GetTextDims(A_LoopField,this.fontFace,this.fontSize,0)
 				ctlWidth := (dropListDims.w + (vScrollw * 1.5) > ctlWidth) ? dropListDims.w + (vScrollW * 1.5) : ctlWidth
 			}
 			
@@ -567,7 +567,7 @@ class msgbox2 {
 			comboMsg := this.comboMsg
 			Loop Parse comboMsg, "|"
 			{
-				comboDims := GetTextDims(A_LoopField,this.fontFace,this.fontSize,0)
+				comboDims := this.GetTextDims(A_LoopField,this.fontFace,this.fontSize,0)
 				ctlWidth := (comboDims.w + (vScrollw * 1.5) > ctlWidth) ? comboDims.w + (vScrollW * 1.5) : ctlWidth
 			}
 			
@@ -789,94 +789,93 @@ class msgbox2 {
 		
 		Critical this.criticalValue
 	}
-}
-
-; ======================================================================
-; modified from Fnt_Library v3 posted by jballi
-; https://www.autohotkey.com/boards/viewtopic.php?f=6&t=4379
-; original function(s) = Fnt_CalculateSize() / Fnt_GetAverageCharWidth()
-; ======================================================================
-GetTextDims(r_Text, sFaceName, nHeight,maxWidth:=0) {
-	Static Dummy57788508, DEFAULT_GUI_FONT:=17, HWND_DESKTOP:=0, MAXINT:=0x7FFFFFFF, OBJ_FONT:=6, SIZE
-	
-	hDC := DllCall("GetDC", "Ptr", HWND_DESKTOP) ; "UInt" or "Ptr" ?
-	devCaps := DllCall("GetDeviceCaps", "Uint", hDC, "int", 90)
-	nHeight := -DllCall("MulDiv", "int", nHeight, "int", devCaps, "int", 72)
-	
-	bBold := False, bItalic := False, bUnderline := False, bStrikeOut := False, nCharSet := 0
-	
-	hFont := DllCall("CreateFont", "int", nHeight, "int", 0, "int", 0, "int", 0, "int", 400 + 300 * bBold
-				   , "Uint", bItalic, "Uint", bUnderline, "Uint", bStrikeOut, "Uint", nCharSet, "Uint", 0, "Uint"
-				   , 0, "Uint", 0, "Uint", 0, "str", sFaceName)
-	
-	hFont := !hFont ? DllCall("GetStockObject","Int",DEFAULT_GUI_FONT) : hFont ; load default font if invalid
-	
-    l_LeftMargin:=0, l_RightMargin:=0, l_TabLength:=0, r_Width:=0, r_Height:=0
-	l_Width := (!maxWidth) ? MAXINT : maxWidth
-	l_DTFormat := 0x400|0x10 ; DT_CALCRECT (0x400) / DT_WORDBREAK (0x10)
-	
-    DRAWTEXTPARAMS := BufferAlloc(20,0) ;-- Create and populate DRAWTEXTPARAMS structure
-	NumPut "UInt", 20, "Int", l_TabLength, "Int", l_LeftMargin, "Int", l_RightMargin, DRAWTEXTPARAMS
-	
-	RECT := BufferAlloc(16,0)
-	NumPut "Int", l_Width, RECT, 8 ;-- right
-	
-    old_hFont := DllCall("SelectObject","Ptr",hDC,"Ptr",hFont)
-	
-	SIZE := BufferAlloc(8,0) ;-- Initialize
-	testW := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" ; taken from Fnt_GetAverageCharWidth()
-	RC := DllCall("GetTextExtentPoint32","Ptr",hDC,"Str",testW,"Int",StrLen(testW),"Ptr",SIZE.Ptr)
-	RC := RC ? NumGet(SIZE,0,"Int") : 0
-	avgCharWidth := Floor((RC/26+1)/2), avgCharHeight := NumGet(SIZE,4,"Int")
-	
-	strBufSize := StrPut(r_Text), l_Text := BufferAlloc(strBufSize+16,0)
-	StrPut r_Text, l_Text ; , (l_Text.Size+1) ; not specifying size
-	
-    DllCall("DrawTextEx","Ptr",hDC,"Ptr",l_Text.Ptr,"Int",-1,"Ptr",RECT.Ptr,"UInt",l_DTFormat,"Ptr",DRAWTEXTPARAMS.Ptr)
-    DllCall("SelectObject","Ptr",hDC,"Ptr",old_hFont)
-	DllCall("ReleaseDC","Ptr",HWND_DESKTOP,"Ptr",hDC) ; avoid memory leak
-	
-	r_Width := NumGet(RECT,8,"Int"), r_Height := NumGet(RECT,12,"Int")
-	NumPut "Int", r_Width, "Int", r_Height, SIZE ; write H/W to SIZE rect structure
-	
-	retVal := {}, retVal.h := r_Height, retVal.w := r_Width
-	retVal.avgW := avgCharWidth, retVal.avgH := avgCharHeight, retVal.addr := SIZE.Ptr
-	
-	return retVal
-}
-
-; ===========================================================================
-; created by TheArkive
-; Usage: Specify X/Y coords to get info on which monitor that point is on,
-;        and the bounds of that monitor.  If no X/Y is specified then the
-;        current mouse X/Y coords are used.
-; ===========================================================================
-GetMonitorData(x:="", y:="") {
-	saveCoordModeMouse := A_CoordModeMouse
-	CoordMode "Mouse", "Screen" ; CoordMode Mouse, Screen ; AHK v1
-	If (x = "" Or y = "")
-		MouseGetPos x, y
-	actMon := 0
-	
-	monCount := MonitorGetCount() ; SysGet, monCount, MonitorCount ; AHK v1
-	Loop monCount { ; Loop % monCount { ; AHK v1
-		MonitorGet(A_Index,mLeft,mTop,mRight,mBottom) ; SysGet, m, Monitor, A_Index ; AHK v1
+	GetMonitorData(x:="", y:="") {
+		; ===========================================================================
+		; created by TheArkive
+		; Usage: Specify X/Y coords to get info on which monitor that point is on,
+		;        and the bounds of that monitor.  If no X/Y is specified then the
+		;        current mouse X/Y coords are used.
+		; ===========================================================================
+		saveCoordModeMouse := A_CoordModeMouse
+		CoordMode "Mouse", "Screen" ; CoordMode Mouse, Screen ; AHK v1
+		If (x = "" Or y = "")
+			MouseGetPos x, y
+		actMon := 0
 		
-		If (mLeft = "" And mTop = "" And mRight = "" And mBottom = "")
-			Continue
-		
-		If (x >= (mLeft) And x <= (mRight-1) And y >= mTop And y <= (mBottom-1)) {
-			curMon := {}, curMon.left := mLeft, curMon.right := mRight
-			curMon.top := mTop, curMon.bottom := mBottom, curMon.active := A_Index
-			curMon.x := x, curMon.y := y
-			curMon.Cx := ((mRight - mLeft) / 2) + mLeft
-			curMon.Cy := ((mBottom - mTop) / 2) + mTop
-			curMon.w := mRight - mLeft, curMon.h := mBottom - mTop
-			Break
+		monCount := MonitorGetCount() ; SysGet, monCount, MonitorCount ; AHK v1
+		Loop monCount { ; Loop % monCount { ; AHK v1
+			MonitorGet(A_Index,mLeft,mTop,mRight,mBottom) ; SysGet, m, Monitor, A_Index ; AHK v1
+			
+			If (mLeft = "" And mTop = "" And mRight = "" And mBottom = "")
+				Continue
+			
+			If (x >= (mLeft) And x <= (mRight-1) And y >= mTop And y <= (mBottom-1)) {
+				curMon := {}, curMon.left := mLeft, curMon.right := mRight
+				curMon.top := mTop, curMon.bottom := mBottom, curMon.active := A_Index
+				curMon.x := x, curMon.y := y
+				curMon.Cx := ((mRight - mLeft) / 2) + mLeft
+				curMon.Cy := ((mBottom - mTop) / 2) + mTop
+				curMon.w := mRight - mLeft, curMon.h := mBottom - mTop
+				Break
+			}
 		}
+		
+		CoordMode "Mouse", saveCoordModeMouse
+		return curMon
 	}
-	
-	CoordMode "Mouse", saveCoordModeMouse
-	return curMon
+	GetTextDims(r_Text, sFaceName, nHeight,maxWidth:=0) {
+		; ======================================================================
+		; modified from Fnt_Library v3 posted by jballi
+		; https://www.autohotkey.com/boards/viewtopic.php?f=6&t=4379
+		; original function(s) = Fnt_CalculateSize() / Fnt_GetAverageCharWidth()
+		; ======================================================================
+		Static Dummy57788508, DEFAULT_GUI_FONT:=17, HWND_DESKTOP:=0, MAXINT:=0x7FFFFFFF, OBJ_FONT:=6, SIZE
+		
+		hDC := DllCall("GetDC", "Ptr", HWND_DESKTOP) ; "UInt" or "Ptr" ?
+		devCaps := DllCall("GetDeviceCaps", "Uint", hDC, "int", 90)
+		nHeight := -DllCall("MulDiv", "int", nHeight, "int", devCaps, "int", 72)
+		
+		bBold := False, bItalic := False, bUnderline := False, bStrikeOut := False, nCharSet := 0
+		
+		hFont := DllCall("CreateFont", "int", nHeight, "int", 0, "int", 0, "int", 0, "int", 400 + 300 * bBold
+					   , "Uint", bItalic, "Uint", bUnderline, "Uint", bStrikeOut, "Uint", nCharSet, "Uint", 0, "Uint"
+					   , 0, "Uint", 0, "Uint", 0, "str", sFaceName)
+		
+		hFont := !hFont ? DllCall("GetStockObject","Int",DEFAULT_GUI_FONT) : hFont ; load default font if invalid
+		
+		l_LeftMargin:=0, l_RightMargin:=0, l_TabLength:=0, r_Width:=0, r_Height:=0
+		l_Width := (!maxWidth) ? MAXINT : maxWidth
+		l_DTFormat := 0x400|0x10 ; DT_CALCRECT (0x400) / DT_WORDBREAK (0x10)
+		
+		DRAWTEXTPARAMS := BufferAlloc(20,0) ;-- Create and populate DRAWTEXTPARAMS structure
+		NumPut "UInt", 20, "Int", l_TabLength, "Int", l_LeftMargin, "Int", l_RightMargin, DRAWTEXTPARAMS
+		
+		RECT := BufferAlloc(16,0)
+		NumPut "Int", l_Width, RECT, 8 ;-- right
+		
+		old_hFont := DllCall("SelectObject","Ptr",hDC,"Ptr",hFont)
+		
+		SIZE := BufferAlloc(8,0) ;-- Initialize
+		testW := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" ; taken from Fnt_GetAverageCharWidth()
+		RC := DllCall("GetTextExtentPoint32","Ptr",hDC,"Str",testW,"Int",StrLen(testW),"Ptr",SIZE.Ptr)
+		RC := RC ? NumGet(SIZE,0,"Int") : 0
+		avgCharWidth := Floor((RC/26+1)/2), avgCharHeight := NumGet(SIZE,4,"Int")
+		
+		strBufSize := StrPut(r_Text), l_Text := BufferAlloc(strBufSize+16,0)
+		StrPut r_Text, l_Text ; , (l_Text.Size+1) ; not specifying size
+		
+		DllCall("DrawTextEx","Ptr",hDC,"Ptr",l_Text.Ptr,"Int",-1,"Ptr",RECT.Ptr,"UInt",l_DTFormat,"Ptr",DRAWTEXTPARAMS.Ptr)
+		DllCall("SelectObject","Ptr",hDC,"Ptr",old_hFont)
+		DllCall("ReleaseDC","Ptr",HWND_DESKTOP,"Ptr",hDC) ; avoid memory leak
+		
+		r_Width := NumGet(RECT,8,"Int"), r_Height := NumGet(RECT,12,"Int")
+		NumPut "Int", r_Width, "Int", r_Height, SIZE ; write H/W to SIZE rect structure
+		
+		retVal := {}, retVal.h := r_Height, retVal.w := r_Width
+		retVal.avgW := avgCharWidth, retVal.avgH := avgCharHeight, retVal.addr := SIZE.Ptr
+		
+		return retVal
+	}
 }
-	
+
+
