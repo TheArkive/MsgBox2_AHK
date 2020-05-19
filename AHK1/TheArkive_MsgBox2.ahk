@@ -508,7 +508,7 @@ class msgbox2 {
 		
 		ctlWidth := (ctlWidth > mW) ? ctlWidth : mW
 		
-		selOps := mX mY " h" mH " w" ctlWidth " +Background" this.bgColor " c" this.txtColor (this.selectable ? " ReadOnly" : "") ; this.bgColor
+		selOps := "+HwndMsgHwnd " mX mY " h" mH " w" ctlWidth " +Background" this.bgColor " c" this.txtColor (this.selectable ? " ReadOnly" : "") ; this.bgColor
 		
 		If (this.selectable) {
 			Gui, Add, Edit, %selOps%
