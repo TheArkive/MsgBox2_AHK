@@ -896,6 +896,12 @@ GetTextDims(r_Text, sFaceName, nHeight,maxWidth:=0) {
 	return retVal
 }
 
+; ===========================================================================
+; created by TheArkive
+; Usage: Specify X/Y coords to get info on which monitor that point is on,
+;        and the bounds of that monitor.  If no X/Y is specified then the
+;        current mouse X/Y coords are used.
+; ===========================================================================
 GetMonitorData(x:="", y:="") {
 	saveCoordModeMouse := A_CoordModeMouse
 	CoordMode Mouse, Screen
