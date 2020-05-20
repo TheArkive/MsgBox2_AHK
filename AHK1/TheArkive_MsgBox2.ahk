@@ -469,7 +469,7 @@ class msgbox2 {
 	MakeGui(ver) {
 		icon := this.icon, sMsg := this.sMsg
 		edit := {}, dropList := {}, check := {}, msg := {}, combo := {}, list := {}
-		edit.hwnd := 0, dropList.hwnd := 0, check.hwnd := 0, msg.hwnd := 0, combo.hwnd := 0
+		edit.hwnd := 0, dropList.hwnd := 0, check.hwnd := 0, msg.hwnd := 0, combo.hwnd := 0, list.hwnd := 0
 		SysGet vScrollW, 2 ; vScrollW := SysGet(2)
 		SysGet hCaption, 4 ; := SysGet(4)
 		SysGet winFrame, 8 ; := SysGet(8)
