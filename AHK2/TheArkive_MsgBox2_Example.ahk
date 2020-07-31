@@ -1,6 +1,6 @@
 ﻿; AHK v2
 ; #Warn  ; Enable warnings to assist with detecting common errors.
-SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SendMode "Input"  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir A_ScriptDir  ; Ensures a consistent starting directory.
 ;#NoTrayIcon
 
@@ -12,7 +12,7 @@ Global mb2ex, bigMsg, bigMsg2
 StartGui()
 
 StartGui() {
-	mb2ex := GuiCreate("","MsgBox2 Examples")
+	mb2ex := Gui.New("","MsgBox2 Examples")
 	mb2ex.OnEvent("Close","mb2ex_Close")
 	mb2ex.AddButton("","Ex #1").OnEvent("Click","Example1")
 	mb2ex.Show("w200")
@@ -38,13 +38,13 @@ Example1(ctl,*) {
 	; ===========================================================================
 	; === Use this to modify font, font size, text color...
 	; ===========================================================================
-	; msgboxStyle := "txtColor:Red,fontFace:Verdana,fontSize:10," ; always end with a comma, it's just easier
-	; sOptions := msgboxStyle
+	msgboxStyle := "txtColor:Red,fontFace:Verdana,fontSize:8," ; always end with a comma, it's just easier
+	sOptions := msgboxStyle
 	
 	; ===========================================================================
 	; define parent window with one of these options.  Do NOT use modal: and parent: together
 	; ===========================================================================
-	sOptions .= "modal:" MainHwnd "," ; prevents taskbar icon, and disables parent window
+	sOptions .= "modal:" mb2ex.hwnd "," ; prevents taskbar icon, and disables parent window
 	; sOptions .= "parent:" MainHwnd "," ; prevents taskbar icon, does NOT disable parent window
 	
 	; ===========================================================================
@@ -80,15 +80,15 @@ Example1(ctl,*) {
 	
 	mb2 := msgbox2.New(sMsg,sTitle,sOptions) ; bigMsg
 	
-	msgbox "edit: " mb2.edit 
+	msgbox "edit: " mb2.editText
 	     . "`r`nlist: " mb2.list
 		 . "`r`nlistText: " mb2.listText
 	     . "`r`ndropList: " mb2.dropList 
 		 . "`r`ndropListText: " mb2.dropListText
 		 . "`r`ncombo: " mb2.combo 
 		 . "`r`ncomboText: " mb2.comboText
-		 . "`r`ncheck: " mb2.check 
-		 . "`r`nbutton: " mb2.button 
+		 . "`r`ncheck: " mb2.checkValue
+		 . "`r`nbutton: " mb2.buttonText
 		 . "`r`nclassNN: " mb2.classNN
 	mb2 := ""
 }
