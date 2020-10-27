@@ -4,8 +4,9 @@ SendMode "Input"  ; Recommended for new scripts due to its superior speed and re
 SetWorkingDir A_ScriptDir  ; Ensures a consistent starting directory.
 ;#NoTrayIcon
 
-; #INCLUDE TheArkive_MsgBox2.ahk
+#INCLUDE TheArkive_Debug.ahk
 #INCLUDE TheArkive_MsgBox2.ahk
+#INCLUDE _JXON.ahk
 
 Global mb2ex, bigMsg, bigMsg2
 
@@ -29,9 +30,9 @@ Example1(ctl,*) {
 	
 	; sMsg := bigMsg2 ; long text that simulates log output, see below
 	
-	; sMsg := "This is an interesting test message.`r`n`r`nDelete file?"
+	sMsg := "This is a short message."
 	
-	sMsg := "BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah"
+	; sMsg := "BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah"
 	
 	; sMsg := "BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah BLAH blah blah blah blah blah blah blah blah blah blah blah blah blah blah"
 	
@@ -50,10 +51,15 @@ Example1(ctl,*) {
 	; ===========================================================================
 	; === some common options
 	; ===========================================================================
-	sOptions .= "noCloseBtn," ; removes close button on dialog
-	sOptions .= "btnAlign:center," ; button alignment: left, center right / default = right
-	sOptions .= "maxWidth:0," ; maxWidth:0 will allow sMsg to be its natural width, limited by screen width
-	sOptions .= "selectable," ; best used with larger dialog sizes
+	sOptions .= "noCloseBtn:true," ; removes close button on dialog
+	; sOptions .= "btnAlign:center," ; button alignment: left, center right / default = right
+    ; sOptions .= "x:200,y:200," ; specify dialog x,y (top left corner)
+	sOptions .= "maxWidth:400," ; don't enable maxWidth and width together
+    ; sOptions .= "width:500," ; don't enable maxWidth and width together
+    ; sOptions .= "Height:50," ; sets height of sMsg, implies selectable:1, makes sMsg an edit box with vScroll instead of a text control.
+    ; sOptions .= "selectable:1," ; best used with larger dialog sizes
+    sOptions .= "help:?:helpFunc," ; adds a help button and defines the callback func for clicking the help button.
+    ; sOptions .= "margin:20," ; sets custom dialog margin
 	
 	; ===========================================================================
 	; check library comments for more icon options
@@ -68,15 +74,16 @@ Example1(ctl,*) {
 	; ===========================================================================
 	sOptions .= "list:Option 1|Option 2|Option 3|Option 4|Option 5|Option 6|Option 7|Option 8|Option 9|Option 10|Option 11:3:5,"
 	sOptions .= "check:Don't show again.:1,"	; add global style + checkBox
-	sOptions .= "dropList:Long Long Long Long Long Long Long Option1|Option2|Option 3:2,"
-	sOptions .= "combo:Option 4|Option 5|Option 6:3,"
-	sOptions .= "edit:New_file_name.txt,"
+	; sOptions .= "dropList:Long Long Long Long Long Long Long Option1|Option2|Option 3:2,"
+	; sOptions .= "combo:Option 4|Option 5|Option 6:3,"
+	sOptions .= "edit:New_file_name.txt," ; adds edit box with prefilled text
 	
 	; ===========================================================================
 	; button list, can be a number 0-6 like original MsgBox command, or
 	; "|" delimited string of your own custom button text
 	; ===========================================================================
 	sOptions .= "btnList:OK|Cancel|Try Again," ; selectable
+    ; sOptions .= "btnTextW:1" ; forces button width to only be as wide as button text + default button margin.
 	
 	mb2 := msgbox2.New(sMsg,sTitle,sOptions) ; bigMsg
 	
@@ -91,6 +98,10 @@ Example1(ctl,*) {
 		 . "`r`nbutton: " mb2.buttonText
 		 . "`r`nclassNN: " mb2.classNN
 	mb2 := ""
+}
+
+helpFunc() {
+    Msgbox "This represents a custom help action."
 }
 
 mb2ex_Close(gui) {
