@@ -486,7 +486,7 @@ class msgbox2 {
 		
 		adjHeight := this.adjHeight, adjWidth := this.adjWidth
 		noClose := this.noCloseBtn ? " -SysMenu" : " -MaximizeBox -MinimizeBox"
-		Gui, New, -DPIScale +HwndGuiHwnd %noClose%, % title
+		Gui, New, -DPIScale +HwndGuiHwnd %noClose%, % this.title
 		Gui, Margin, % dMar, % dMar
 		this.hwnd := GuiHwnd
 		Gui, Color, % this.bgColor
