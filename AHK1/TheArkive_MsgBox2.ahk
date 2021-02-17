@@ -249,6 +249,7 @@
 ; https://github.com/AHK-just-me/TaskDialog/blob/master/Sources/TaskDialog.ahk
 ; ================================================================================================
 
+Global Msgbox2Hwnd
 class msgbox2 {
 	__New(sMsg,title:="",sOptions:="") {
 		this.mRightClick := ObjBindMethod(this,"RightClick")
@@ -488,7 +489,7 @@ class msgbox2 {
 		noClose := this.noCloseBtn ? " -SysMenu" : " -MaximizeBox -MinimizeBox"
 		Gui, New, -DPIScale +HwndGuiHwnd %noClose%, % this.title
 		Gui, Margin, % dMar, % dMar
-		this.hwnd := GuiHwnd
+		this.hwnd := Msgbox2Hwnd := GuiHwnd
 		Gui, Color, % this.bgColor
 		Gui, Font, % "s" this.fontSize, % this.fontFace
 		
