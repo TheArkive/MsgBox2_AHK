@@ -4,7 +4,6 @@ SendMode "Input"  ; Recommended for new scripts due to its superior speed and re
 SetWorkingDir A_ScriptDir  ; Ensures a consistent starting directory.
 ;#NoTrayIcon
 
-#INCLUDE TheArkive_Debug.ahk
 #INCLUDE TheArkive_MsgBox2.ahk
 #INCLUDE _JXON.ahk
 
@@ -13,13 +12,15 @@ Global mb2ex, bigMsg, bigMsg2
 StartGui()
 
 StartGui() {
-	mb2ex := Gui.New("","MsgBox2 Examples")
-	mb2ex.OnEvent("Close","mb2ex_Close")
-	mb2ex.AddButton("","Ex #1").OnEvent("Click","Example1")
+    Global mb2ex, bigMsg, bigMsg2
+	mb2ex := Gui("","MsgBox2 Examples")
+	mb2ex.OnEvent("Close",mb2ex_Close)
+	mb2ex.AddButton("","Ex #1").OnEvent("Click",Example1)
 	mb2ex.Show("w200")
 }
 
 Example1(ctl,*) {
+    Global mb2ex, bigMsg, bigMsg2
 	sTitle := "File Delete Action" ; title ... can be anything
 	
 	; ===========================================================================
@@ -58,7 +59,7 @@ Example1(ctl,*) {
     ; sOptions .= "width:500," ; don't enable maxWidth and width together
     ; sOptions .= "Height:50," ; sets height of sMsg, implies selectable:1, makes sMsg an edit box with vScroll instead of a text control.
     ; sOptions .= "selectable:1," ; best used with larger dialog sizes
-    sOptions .= "help:?:helpFunc," ; adds a help button and defines the callback func for clicking the help button.
+    ; sOptions .= "help:?:helpFunc," ; adds a help button and defines the callback func for clicking the help button.
     ; sOptions .= "margin:20," ; sets custom dialog margin
 	
 	; ===========================================================================
@@ -74,8 +75,8 @@ Example1(ctl,*) {
 	; ===========================================================================
 	sOptions .= "list:Option 1|Option 2|Option 3|Option 4|Option 5|Option 6|Option 7|Option 8|Option 9|Option 10|Option 11:3:5,"
 	sOptions .= "check:Don't show again.:1,"	; add global style + checkBox
-	; sOptions .= "dropList:Long Long Long Long Long Long Long Option1|Option2|Option 3:2,"
-	; sOptions .= "combo:Option 4|Option 5|Option 6:3,"
+	sOptions .= "dropList:Long Long Long Long Long Long Long Option1|Option2|Option 3:2,"
+	sOptions .= "combo:Option 4|Option 5|Option 6:3,"
 	sOptions .= "edit:New_file_name.txt," ; adds edit box with prefilled text
 	
 	; ===========================================================================
@@ -85,7 +86,7 @@ Example1(ctl,*) {
 	sOptions .= "btnList:OK|Cancel|Try Again," ; selectable
     ; sOptions .= "btnTextW:1" ; forces button width to only be as wide as button text + default button margin.
 	
-	mb2 := msgbox2.New(sMsg,sTitle,sOptions) ; bigMsg
+	mb2 := msgbox2(sMsg,sTitle,sOptions) ; bigMsg
 	
 	msgbox "edit: " mb2.editText
 	     . "`r`nlist: " mb2.list
@@ -105,6 +106,7 @@ helpFunc() {
 }
 
 mb2ex_Close(gui) {
+    Global mb2ex, bigMsg, bigMsg2
 	if (gui.hwnd = mb2ex.hwnd)
 		ExitApp
 }

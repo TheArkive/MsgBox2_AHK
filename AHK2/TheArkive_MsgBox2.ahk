@@ -262,14 +262,15 @@ class msgbox2 {
     helpDims := {}, btnDims := {}, btnListW := [], curMon := 0, pDims := {} ; ==== suggested NO modificatin
     totalWidth := 0, totalHeight := 0, ctlWidth := 0, adjHeight := 0, adjWidth := 0, sPadR := 1.25
     charList := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", avg := "", testDlg := ""
+    helpCallback := ""
     
     __New(sMsg,title:="",options:="") {
         Critical "off"
         this.sMsg := sMsg, this.options := options, this.title := title, iconHt := 32 * this.scale
         
-        this.mRightClick := ObjBindMethod(this,"RightClick"), mRightClick := this.mRightClick ; binding methods/events
+        mRightClick := ObjBindMethod(this,"RightClick") ; binding methods/events
         OnMessage(0x204,mRightClick)
-        this.mCloseWin := ObjBindMethod(this,"CloseWin"), mCloseWin := this.mCloseWin
+        mCloseWin := ObjBindMethod(this,"CloseWin")
         OnMessage(0x0112,mCloseWin)
         this.mContextMenu := ObjBindMethod(this,"ContextMenu"), this.mButtonPress := ObjBindMethod(this,"ButtonPress")
         
@@ -302,7 +303,7 @@ class msgbox2 {
         
         pX := "", pY := "", pW := 0, pH := 0
         If WinExist("ahk_id " this.parent)
-            WinGetPos pX, pY, pW, pH, "ahk_id " this.parent
+            WinGetPos &pX, &pY, &pW, &pH, "ahk_id " this.parent
         this.curMon  := this.MonitorFromPoint(pX,pY), this.pDims := {Cx:(pX+(pW//2)), Cy:(pY+(pH//2))} ; use parent x/y/w/h to determine center point
         this.btnDims := this.txtDims("Try Again","btnDims") ; default button dims / no padding
         
@@ -323,7 +324,7 @@ class msgbox2 {
             this.btnDefault := (btnProp = "d") ? A_Index : this.btnDefault
             btnDims := this.txtDims(btnText,"btn" A_Index)
             
-            this.btnDims := (btnDims.w > this.btnDims.w) ? btnDims : this.btnDims ; record longest button
+            this.btnDims := (btnDims.w > this.btnDims.w) ? btnDims : this.btnDims ; record widest button
             bMW += btnDims.w + this.btnMarX
             this.btnListW.InsertAt(A_Index,btnDims.w)
             
@@ -333,21 +334,20 @@ class msgbox2 {
         this.bMWd := this.btnCount * (this.btnDims.w + this.btnMarX)    ; bMW default (all btns same width)
         this.bMWc := bMW                                                ; bMW custom (btnTextW)
         
-        If (this.helpText) {
-            this.helpDims := this.txtDims(this.helpText,"help")
-            this.bMWd += this.helpDims.w + this.btnMarX
-            this.bMWc += this.helpDims.w + this.btnMarX
-        }
+        this.helpDims := this.txtDims(this.helpText,"help"), hDims := this.helpDims.w + this.btnMarX ; add help btn dimensions
+        this.bMWd += (this.helpDims.w ? hDims : 0), this.bMWc += (this.helpDims.w ? hDims : 0)
         this.bMW := this.btnTextW ? bMW : this.bMWd                     ; set final bMW
         
         this.MakeGui(1)
     }
     txtDims(str,ctlName,width:=0) {
+        If (str="")
+            return {x:0,y:0,w:0,h:0}
         width := width ? " w" width : ""
         If (this.testDlg = "" And ctlName = "avgDims") { ; get avg char w/h or add element to get dims
-            this.testDlg := Gui.New(), this.testDlg.SetFont("s" this.fontSize,this.fontFace) ; create dummy GUI
-            this.testDlg.Add("text","xm vavgDims",this.charList), this.testDlg["avgDims"].GetPos(x,y,w,h) ; avg char w/h
-        } Else this.testDlg.Add("Text","xm v" ctlName width,str), this.testDlg[ctlName].GetPos(x,y,w,h) ; add element
+            this.testDlg := Gui(), this.testDlg.SetFont("s" this.fontSize,this.fontFace) ; create dummy GUI, set font
+            this.testDlg.Add("text","xm vavgDims",this.charList), this.testDlg["avgDims"].GetPos(&x,&y,&w,&h) ; avg char w/h
+        } Else this.testDlg.Add("Text","xm v" ctlName width,str), this.testDlg[ctlName].GetPos(&x,&y,&w,&h) ; add element for x/y/w/h
         return (ctlName = "avgDims") ? {h:h, w:(w//52)} : {x:x, y:y, w:w, h:h}
     }
     __Delete(msg := "") {
@@ -398,15 +398,15 @@ class msgbox2 {
         } Else msg := this.txtDims(this.sMsg,"msg",this.width)  ; user specified width
         this.ctlWidth := msg.w                                  ; set initial control width
         
-        g := Gui.New("-DPIScale" (this.noCloseBtn ? " -SysMenu" : " -MaximizeBox -MinimizeBox"),this.title)
+        g := Gui("-DPIScale" (this.noCloseBtn ? " -SysMenu" : " -MaximizeBox -MinimizeBox"),this.title)
         g.MarginX := this.dlgMargin, g.MarginY := this.dlgMargin, this.hwnd := g.Hwnd
         g.BackColor := this.bgColor, g.SetFont("s" this.fontSize,this.fontFace)
         
         If (this.icon.file) { ; this.dlgMargin for x and y = orig
             iconOptions := "vicon xm ym h" this.icon.h " w-1" (this.icon.num ? " Icon" this.icon.num : "")
             picCtl := g.Add("Picture",iconOptions,this.icon.file)
-            picCtl.GetPos(x:=0,y:=0,w:=0,h:=0), this.icon := {x:x,y:y,w:w,h:h,hwnd:picCtl.hwnd,num:this.icon.num,file:this.icon.file}
-        }
+            picCtl.GetPos(&x,&y,&w,&h), this.icon := {x:x,y:y,w:w,h:h,hwnd:picCtl.hwnd,num:this.icon.num,file:this.icon.file}
+        } ; x:=0 ??? for all?
         
         mX := (this.icon.file) ? "xm+" (this.icon.w + this.sPad) : "xm"     ; adjust x/y/w/h for sMsg
         mY := (this.icon.file And msg.h < this.icon.h) ? " ym+" ((this.icon.h/2) - (msg.h/2)) : " ym"
@@ -416,53 +416,53 @@ class msgbox2 {
         
         selOps := mX mY " h" mH " w" this.ctlWidth " +Background" this.bgColor " c" this.txtColor (this.selectable ? " ReadOnly" : "")
         
-        If (this.selectable) {
+        If (this.selectable)
             msgCtl := g.Add("Edit",selOps " vmsgEdit",""), msgCtl.Value := this.sMsg ; necessary when StrLen(sMsg) > 65535
-        } Else msgCtl := g.Add("Text",selOps " vmsg",this.sMsg)
+        Else msgCtl := g.Add("Text",selOps " vmsg",this.sMsg)
         
-        msgCtl.GetPos(x:=0,y:=0,w:=0,h:=0), msg := {x:x,y:y,w:w,h:h,hwnd:msgCtl.hwnd} ; redefine msg dims
+        msgCtl.GetPos(&x,&y,&w,&h), msg := {x:x,y:y,w:w,h:h,hwnd:msgCtl.hwnd} ; redefine msg dims
         newY := (msg.h > this.icon.h) ? (this.dlgMargin + msg.h + this.sPad) : (this.dlgMargin + this.icon.h + this.sPad)
         
         if (this.listMsg) {
             listDims := this.txtDims(StrReplace(this.listMsg,"|","`r`n"),"list"), listArr := StrSplit(this.listMsg,"|")
-            this.ctlWidth := (listDims.w + (vScrollw * 1.5) > this.ctlWidth) ? listDims.w + (vScrollW * 1.5) : this.ctlWidth
+            this.ctlWidth := ((addW:=listDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
             
             listRows := (listArr.Length > 10 And !this.listRows) ? 10 : this.listRows
             listCtl := g.Add("Listbox","xp y" newY " w" this.ctlWidth " Choose" this.listMsgVal " r" listRows " vlist",listArr)
-            listCtl.GetPos(x:=0,y:=0,w:=0,h:=0), list := {x:x,y:y,w:w,h:h,hwnd:listCtl.hwnd}
+            listCtl.GetPos(&x,&y,&w,&h), list := {x:x,y:y,w:w,h:h,hwnd:listCtl.hwnd}
             newY += list.h + this.sPad, listCtl := ""
         }
         
         if (this.editBox) {
             editDims := this.txtDims(this.editMsg,"edit")
-            this.ctlWidth := (editDims.w + vScrollW > this.ctlWidth) ? editDims.w + vScrollW : this.ctlWidth
+            this.ctlWidth := ((addW:=editDims.w+vScrollW) > this.ctlWidth) ? addW : this.ctlWidth
             
             editCtl := g.Add("Edit","xp y" newY " w" this.ctlWidth " r1 vedit",this.editMsg)
-            editCtl.GetPos(x:=0,y:=0,w:=0,h:=0), edit := {x:x,y:y,w:w,h:h,hwnd:editCtl.hwnd}
+            editCtl.GetPos(&x,&y,&w,&h), edit := {x:x,y:y,w:w,h:h,hwnd:editCtl.hwnd}
             newY += edit.h + this.sPad, editCtl := ""
         }
         
         If (this.dropListMsg) {
             dropListDims := this.txtDims(StrReplace(this.dropListMsg,"|","`r`n"),"dropList"), dropListArr := StrSplit(this.dropListMsg,"|")
-            this.ctlWidth := (dropListDims.w + (vScrollw * 1.5) > this.ctlWidth) ? dropListDims.w + (vScrollW * 1.5) : this.ctlWidth
+            this.ctlWidth := ((addW:=dropListDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
             
             dropListCtl := g.Add("DropDownList","xp y" newY " w" this.ctlWidth " Choose" this.dropListMsgVal " vdroplist",dropListArr)
-            dropListCtl.GetPos(x:=0,y:=0,w:=0,h:=0), dropList := {x:x,y:y,w:w,h:h,hwnd:dropListCtl.hwnd}
+            dropListCtl.GetPos(&x,&y,&w,&h), dropList := {x:x,y:y,w:w,h:h,hwnd:dropListCtl.hwnd}
             newY += dropList.h + this.sPad, dropListCtl := ""
         }
         
         if (this.comboMsg) {
             comboDims := this.txtDims(StrReplace(this.comboMsg,"|","`r`n"),"combo"), comboArr := StrSplit(this.comboMsg,"|")
-            this.ctlWidth := (comboDims.w + (vScrollw * 1.5) > this.ctlWidth) ? comboDims.w + (vScrollW * 1.5) : this.ctlWidth
+            this.ctlWidth := ((addW:=comboDims.w+(vScrollw*1.5)) > this.ctlWidth) ? addW : this.ctlWidth
             
             comboCtl := g.Add("ComboBox","xp y" newY " w" this.ctlWidth " Choose" this.comboMsgVal "vcombo",comboArr)
-            comboCtl.GetPos(x:=0,y:=0,w:=0,h:=0), combo := {x:x,y:y,w:w,h:h,hwnd:comboCtl.hwnd}
+            comboCtl.GetPos(&x,&y,&w,&h), combo := {x:x,y:y,w:w,h:h,hwnd:comboCtl.hwnd}
             newY += combo.h + this.sPad, comboCtl := ""
         }
         
         If (this.checkMsg) {
             chkCtl := g.Add("Checkbox","xp y" newY " vcheck",this.checkMsg), chkCtl.Value := this.checkMsgVal
-            c := chkCtl.GetPos(x:=0,y:=0,w:=0,h:=0), check := {x:x,y:y,w:w,h:h,hwnd:chkCtl.hwnd}
+            c := chkCtl.GetPos(&x,&y,&w,&h), check := {x:x,y:y,w:w,h:h,hwnd:chkCtl.hwnd}
             
             this.ctlWidth := (check.w > this.ctlWidth) ? check.w : this.ctlWidth
             newY += check.h + this.sPad, chkCtl := ""
@@ -495,8 +495,7 @@ class msgbox2 {
                 def := (A_Index = this.btnDefault) ? " +Default" : ""
                 curOpts := xy bWS " h" (this.btnDims.h + this.btnMarY) def
                 
-                btnCtl := g.Add("Button",curOpts,btnText) ; def
-                b := btnCtl.GetPos(x:=0,y:=0,w:=0,h:=0), b := {x:x,y:y,w:w,h:h}
+                btnCtl := g.Add("Button",curOpts,btnText), btnCtl.GetPos(&x,&y,&w,&h), b := {x:x,y:y,w:w,h:h}
                 btnCtl.OnEvent("Click",this.mButtonPress)
                 def ? btnCtl.Focus() : ""
             }
@@ -512,21 +511,18 @@ class msgbox2 {
         }
         g.Show("hide"), this.gui := g, opt := ""
         If this.parent
-            g.GetPos(x,y,w,h), d := {x:x, y:y, w:w, h:h}, x := this.pDims.Cx - (d.w//2), y := this.pDims.Cy - (d.h//2), opt := "x" x " y" y
+            g.GetPos(&x,&y,&w,&h), d := {x:x, y:y, w:w, h:h}, x := this.pDims.Cx - (d.w//2), y := this.pDims.Cy - (d.h//2), opt := "x" x " y" y
         g.Show((this.x and this.y) ? "x" this.x " y" this.y : opt)
         
         this.IH := InputHook("V") ; "V" for not blocking input
-        this.IH.KeyOpt("{BackSpace}{Escape}{Enter}{Space}{NumpadEnter}{F4}","N")
-        this.IH.OnKeyDown := ObjBindMethod(this,"IHKeyDown") ; mIHKeyDown
+        this.IH.KeyOpt("{BackSpace}{Escape}{Enter}{Space}{NumpadEnter}{F4}","N") ; not using all these keys, but we might later
+        this.IH.OnKeyDown := ObjBindMethod(this,"IHKeyDown")
         this.testDlg.Destroy(), this.testDlg := "", this.IH.Start(), this.IH.Wait()
     }
     RightClick(wParam, lParam, msg, hwnd) {
         If (hwnd = this.hwnd) {
             x := lParam & 0xff, y := (lParam >> (A_PtrSize * 2)) & 0xff
-            mContextMenu := this.mContextMenu
-            cMenu := Menu.New()
-            cMenu.Add("Copy Message",mContextMenu)
-            cMenu.Show()
+            cMenu := Menu.New(), cMenu.Add("Copy Message",this.mContextMenu), cMenu.Show()
         }
     }
     CloseWin(wParam, lParam, msg, hwnd) {
@@ -537,8 +533,8 @@ class msgbox2 {
         clipboard := this.sMsg
     }
     ButtonPress(oCtl, info) {
-        If (oCtl.Name = "help" And IsFunc(this.helpCallback))
-            cb := this.helpCallback, %cb%() ; help callback
+        If (oCtl.Name = "help" And (Type(this.helpCallback)!="String"))
+            cb := this.helpCallback, cb() ; help callback
         Else
             ctlClassNN := oCtl.ClassNN, ctlText := oCtl.Text, bR := [ctlText,ctlClassNN], this.procResult(bR) ; exit with btn clicked
     }
@@ -565,8 +561,7 @@ class msgbox2 {
             ctl := GuiCtrlFromHwnd(this.ctrls.check.hwnd),    this.checkValue := ctl.Value
         If (this.ctrls.list.hwnd)
             ctl := GuiCtrlFromHwnd(this.ctrls.list.hwnd),     this.list := ctl.Value, this.listText := ctl.Text
-        
-        this.buttonText := bR[1],  this.ClassNN := bR[2],     this.IH.Stop()
+        this.buttonText := bR[1],   this.ClassNN := bR[2],    this.IH.Stop()
         
         If this.parent
             WinActivate("ahk_id " this.parent) ; ALT+F4 seems to send parent to background
@@ -574,15 +569,14 @@ class msgbox2 {
             WinSetEnabled(1, "ahk_id " this.modal) ; re-enable parent if modal was used
         
         this.gui.Destroy()
-        
         Critical this.criticalValue
     }
     MonitorFromPoint(ix:="", iy:="") {
         mcm := A_CoordModeMouse, selected := 0 ; save current mouse CoordMode, and init selected
-        CoordMode("Mouse", "Screen"), MouseGetPos(x, y), CoordMode("Mouse", mcm)
+        CoordMode("Mouse", "Screen"), MouseGetPos(&x, &y), CoordMode("Mouse", mcm)
         x := IsInteger(ix) ? ix : x, y := IsInteger(iy) ? iy : y
         Loop MonitorGetCount() {
-            MonitorGet(A_Index,mLeft,mTop,mRight,mBottom)
+            MonitorGet(A_Index,&mLeft,&mTop,&mRight,&mBottom)
             selected := ((x >= mLeft) And (x <= mRight) And (y >= mTop) And (y <= mBottom)) ? A_Index : 0
             If selected
                 break
