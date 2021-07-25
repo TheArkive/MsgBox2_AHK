@@ -282,10 +282,8 @@ class msgbox2 {
         Loop optArr.Length {
             If ((o := optArr[A_Index])="")
                 Continue
-            curOptArr := StrSplit(o,":"), curOpt := curOptArr[1], curVal := ""
-            Loop curOptArr.Length
-                If (A_Index >= 2)
-                    curVal .= curOptArr[A_Index] ":"
+            curOpt := SubStr(o,1,(sep:=InStr(o,":"))-1)
+            curVal := SubStr(o,sep+1)
             this.%curOpt% := Trim(curVal,":")
         }
         
